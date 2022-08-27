@@ -72,8 +72,8 @@ def main(config):
                 n_correct += correct_batch
                 accuracy = correct_batch / labels.shape[0]
 
-            tqdm_it.set_description(f'Epoch:  [{epoch}/{n_epochs}]')
-            tqdm_it.set_postfix(loss=loss.item(), acc=accuracy.item())
+            tqdm_it.set_description(f'Epoch: [{epoch+1}/{n_epochs}]')
+            tqdm_it.set_postfix(loss=loss.item(), acc=accuracy)
 
         model.eval()
         with torch.no_grad():

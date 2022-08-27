@@ -47,4 +47,5 @@ def plot_history(history):
 
   axs[0].legend() 
   axs[1].legend()
+  plt.show()
   plt.savefig('history.jpg', dpi=300)
