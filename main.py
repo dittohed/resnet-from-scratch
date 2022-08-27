@@ -15,7 +15,7 @@ def main(config):
 
     train_transforms = transforms.Compose([
         transforms.ToTensor(),
-        transforms.RandomResizedCrop(),
+        transforms.RandomResizedCrop((32, 32)),
         transforms.RandomHorizontalFlip()
         ])
     
