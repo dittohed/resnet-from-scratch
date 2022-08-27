@@ -39,13 +39,13 @@ def plot_history(history):
   fig, axs = plt.subplots(2, 1, figsize=(10, 10))
   fig.tight_layout()
 
-  axs[0].plot('train accuracy', 'r--', label='acc', data=history)
-  axs[0].plot('val accuracy', 'k--', label='val_acc', data=history)
+  axs[0].plot('acc', 'r--', label='train accuracy', data=history)
+  axs[0].plot('val_acc', 'k--', label='val. accuracy', data=history)
 
-  axs[1].plot('train loss', 'r', label = 'loss', data=history)
-  axs[1].plot('val loss', 'k', label = 'val_loss', data=history)
+  axs[1].plot('loss', 'r', label = 'train loss', data=history)
+  axs[1].plot('val_loss', 'k', label = 'val. loss', data=history)
 
   axs[0].legend() 
   axs[1].legend()
-  plt.show()
+
   plt.savefig('history.jpg', dpi=300)
