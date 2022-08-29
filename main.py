@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 
 from tqdm import tqdm
 
-from resnet import resnet18
+from resnet import resnet50
 from callbacks import EarlyStopping, Checkpoint
 from utils import split_dataset, evaluate, plot_history
 
@@ -36,7 +36,7 @@ def main(config):
                                                batch_size=config['batch_size'], 
                                                shuffle=False)
 
-    model = resnet18().to(device)
+    model = resnet50().to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
