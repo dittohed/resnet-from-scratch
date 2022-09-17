@@ -14,32 +14,43 @@ def main(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     train_transforms = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.RandomResizedCrop((32, 32)),
-        transforms.RandomHorizontalFlip()
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        ])
+
+    test_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         ])
     
     train_ds = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         transform=train_transforms, 
                                         download=True)
     val_test_ds = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                        transform=transforms.ToTensor())
+                                        transform=test_transforms)
     val_ds, test_ds = split_dataset(val_test_ds, seed=42)
 
     train_loader = torch.utils.data.DataLoader(train_ds, 
                                                batch_size=config['batch_size'], 
-                                               shuffle=True)
+                                               shuffle=True,
+                                               num_workers=4)
     val_loader = torch.utils.data.DataLoader(val_ds, 
                                                batch_size=config['batch_size'], 
-                                               shuffle=False)
+                                               shuffle=False,
+                                               num_workers=4)
     test_loader = torch.utils.data.DataLoader(test_ds, 
                                                batch_size=config['batch_size'], 
-                                               shuffle=False)
+                                               shuffle=False,
+                                               num_workers=4)
 
     model = resnet50().to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
+    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'],
+                                momentum=0.9, weight_decay=5e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
     early_stopping = EarlyStopping()
     checkpoint = Checkpoint('./resnet_cifar.pth.tar', model, optimizer)  
@@ -89,18 +100,19 @@ def main(config):
             history['val_acc'].append(val_accuracy)
             history['val_loss'].append(val_loss)
 
+        scheduler.step()
         early_stopping.callback(val_accuracy)
         checkpoint.callback(val_accuracy)
         if early_stopping.stop_training:
             break
-
+            
     plot_history(history)
 
 
 if __name__ == '__main__':
     config = {
-        'n_epochs': 50,
-        'batch_size': 32,
-        'lr': 1e-3}
+        'n_epochs': 200,
+        'batch_size': 128,
+        'lr': 0.1}
 
     main(config)
