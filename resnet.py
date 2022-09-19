@@ -107,13 +107,19 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
 
-def resnet18():
-    return ResNet([2, 2, 2, 2], 3, 10)
+def get_resnet(version):
+    def resnet18():
+        return ResNet([2, 2, 2, 2], 3, 10)
 
+    def resnet50():
+        return ResNet([3, 4, 6, 3], 3, 10)
 
-def resnet50():
-    return ResNet([3, 4, 6, 3], 3, 10)
+    def resnet101():
+        return ResNet([3, 4, 23, 3], 3, 10)
 
-
-def resnet101():
-    return ResNet([3, 4, 23, 3], 3, 10)
+    if version == '18':
+        return resnet18()
+    elif version == '50':
+        return resnet50()
+    elif version == '101':
+        return resnet101()
