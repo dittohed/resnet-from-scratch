@@ -50,7 +50,8 @@ def main(config):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'],
                                 momentum=0.9, weight_decay=5e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 
+                                                config['n_epochs'])
 
     early_stopping = EarlyStopping()
     checkpoint = Checkpoint('./resnet_cifar.pth.tar', model, optimizer)  
@@ -61,7 +62,6 @@ def main(config):
         }
     
     for epoch in range(n_epochs):
-        n_correct = 0
         tqdm_it = tqdm(train_loader, total=len(train_loader), 
                        leave=True)
    
@@ -80,11 +80,11 @@ def main(config):
             with torch.no_grad():
                 outputs = torch.argmax(outputs, dim=1)
                 correct_batch = (outputs == labels).float().sum().item()
-                n_correct += correct_batch
                 accuracy = correct_batch / labels.shape[0]
 
             tqdm_it.set_description(f'Epoch: [{epoch+1}/{n_epochs}]')
-            tqdm_it.set_postfix(loss=loss.item(), acc=accuracy)
+            tqdm_it.set_postfix(loss=loss.item(), acc=accuracy,
+                                lr=scheduler.get_last_lr().item())
 
         model.eval()
         with torch.no_grad():
@@ -111,8 +111,8 @@ def main(config):
 
 if __name__ == '__main__':
     config = {
-        'n_epochs': 200,
-        'batch_size': 128,
-        'lr': 0.1}
+        'n_epochs': 300,
+        'batch_size': 64,
+        'lr': 0.001}
 
     main(config)
