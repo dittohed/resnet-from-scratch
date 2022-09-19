@@ -84,7 +84,7 @@ def main(config):
 
             tqdm_it.set_description(f'Epoch: [{epoch+1}/{n_epochs}]')
             tqdm_it.set_postfix(loss=loss.item(), acc=accuracy,
-                                lr=scheduler.get_last_lr().item())
+                                lr=scheduler.get_last_lr()[0])
 
         model.eval()
         with torch.no_grad():
