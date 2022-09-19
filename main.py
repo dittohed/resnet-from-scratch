@@ -1,3 +1,5 @@
+import wandb
+
 import torch
 import torch.nn as nn
 import torchvision
@@ -5,7 +7,7 @@ import torchvision.transforms as transforms
 
 from tqdm import tqdm
 
-from resnet import resnet50
+from resnet import get_resnet
 from callbacks import EarlyStopping, Checkpoint
 from utils import split_dataset, evaluate, plot_history
 
@@ -35,31 +37,32 @@ def main(config):
     train_loader = torch.utils.data.DataLoader(train_ds, 
                                                batch_size=config['batch_size'], 
                                                shuffle=True,
-                                               num_workers=4)
+                                               num_workers=2)
     val_loader = torch.utils.data.DataLoader(val_ds, 
                                                batch_size=config['batch_size'], 
                                                shuffle=False,
-                                               num_workers=4)
-    test_loader = torch.utils.data.DataLoader(test_ds, 
-                                               batch_size=config['batch_size'], 
-                                               shuffle=False,
-                                               num_workers=4)
+                                               num_workers=2)
+    # test_loader = torch.utils.data.DataLoader(test_ds, 
+    #                                            batch_size=config['batch_size'], 
+    #                                            shuffle=False,
+    #                                            num_workers=2)
 
-    model = resnet50().to(device)
+    model = get_resnet(config['version']).to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'],
-                                momentum=0.9, weight_decay=5e-4)
+                                momentum=0.9, 
+                                weight_decay=config['weight_decay'])
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 
                                                 config['n_epochs'])
 
     early_stopping = EarlyStopping()
     checkpoint = Checkpoint('./resnet_cifar.pth.tar', model, optimizer)  
     n_epochs = config['n_epochs']
-    history = {
-        'acc': [], 'val_acc': [],
-        'loss': [], 'val_loss': []
-        }
+    # history = {
+    #     'acc': [], 'val_acc': [],
+    #     'loss': [], 'val_loss': []
+    #     }
     
     for epoch in range(n_epochs):
         tqdm_it = tqdm(train_loader, total=len(train_loader), 
@@ -91,14 +94,21 @@ def main(config):
             train_loss, train_accuracy = evaluate(model, train_loader, 
                                               len(train_ds), criterion, device) 
             print(f'Training loss: {train_loss:.2f}, accuracy: {train_accuracy:.2f}')
-            history['acc'].append(train_accuracy)
-            history['loss'].append(train_loss)
+            # history['acc'].append(train_accuracy)
+            # history['loss'].append(train_loss)
 
             val_loss, val_accuracy = evaluate(model, val_loader, 
                                               len(val_ds), criterion, device)            
             print(f'Validation loss: {val_loss:.2f}, accuracy: {val_accuracy:.2f}')
-            history['val_acc'].append(val_accuracy)
-            history['val_loss'].append(val_loss)
+            # history['val_acc'].append(val_accuracy)
+            # history['val_loss'].append(val_loss)
+
+        wandb.log({
+            'acc': train_accuracy,
+            'loss': train_loss,
+            'val_acc': val_accuracy,
+            'val_loss': val_loss
+            })
 
         scheduler.step()
         early_stopping.callback(val_accuracy)
@@ -106,13 +116,25 @@ def main(config):
         if early_stopping.stop_training:
             break
             
-    plot_history(history)
+    wandb.summary({'epochs_trained': epoch+1})
+    # plot_history(history)
 
 
 if __name__ == '__main__':
     config = {
+        'version': '50',
         'n_epochs': 300,
         'batch_size': 64,
-        'lr': 0.001}
+        'lr': 0.001,
+        'weight_decay': 5e-4}
+
+    wandb_project = 'resnet-from-scratch'
+    wandb_run = '50_v1'
+
+    # Track experiment using wandb.ai
+    wandb.login()
+    wandb.init(project=wandb_project, name=wandb_run, config=config)
 
     main(config)
+
+    wandb.finish()
